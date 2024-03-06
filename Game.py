@@ -2,9 +2,11 @@ import pygame
 import pygame.sprite
 import sys
 import pygame_widgets
-from pygame.surfarray import make_surface
 from pygame_widgets.slider import Slider
 from pygame_widgets.textbox import TextBox
+import random
+import pygame_gui
+import Map
 # screen
 pygame.init()
 screenWidth, screenHeight = 600, 600
@@ -13,6 +15,8 @@ pygame.display.set_caption("Game")
 clock = pygame.time.Clock()
 pygame.display.flip()
 # color
+def RANDOM_COLOR():
+    return (random.randint(0,255),random.randint(0,255),random.randint(0,255))
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
@@ -68,6 +72,7 @@ class Button:
                     self.color = self.active_color
         else:
             self.color = self.inactive_color
+
     def reset(self):
         self.clicked = False
         self.color = self.inactive_color
@@ -154,36 +159,37 @@ class Menu:
             loadSlot.x = button_x
 
     def handle_event(self, event):
-        global running, Mainmenu, playGame
+        global running, show_pauseMenu, show_mainmenu, show_playerProfile
         pygame_widgets.update(event)
-        if Mainmenu == False:
-            self.backButton.handle_event(event)
-            if self.backButton.clicked:
-                if self.showSettings:
-                    self.showSettings = False
+        self.backButton.handle_event(event)
+        if self.backButton.clicked:
+            if self.showSettings:
+                self.showSettings = False
+            else:
+                self.showLoadScreen = False
+            self.backButton.reset()
+        # others
+        if self.showSettings == False and self.showLoadScreen == False:
+            for button in self.buttons:
+                button.handle_event(event)
+                if button.color == button.active_color:
+                    button.textColor = button.active_color
                 else:
-                    self.showLoadScreen = False
-                self.backButton.reset()
-            # others
-            if self.showSettings == False and self.showLoadScreen == False:
-                for button in self.buttons:
-                    button.handle_event(event)
-                    if button.color == button.active_color:
-                        button.textColor = button.active_color
-                    else:
-                        button.textColor = button.inactive_color
-                    if button.clicked:
-                        if button.text == "Exit":
-                            running = False
-                            sys.exit()
-                        if button.text == "continue" or button.text == "New Game":
-                            Mainmenu = False
-                            playGame = True
-                        if button.text == "Options":
-                            self.showSettings = True
-                        if button.text == "Load Game":
-                            self.showLoadScreen = True
-                        button.reset()
+                    button.textColor = button.inactive_color
+                if button.clicked:
+                    if button.text == "Exit":
+                        running = False
+                        sys.exit()
+                    if button.text == "continue" or button.text == "New Game":
+                        if button.text == "New Game":
+                            show_playerProfile = True
+                        show_pauseMenu = False
+                        show_mainmenu = False
+                    if button.text == "Options":
+                        self.showSettings = True
+                    if button.text == "Load Game":
+                        self.showLoadScreen = True
+                    button.reset()
             # loadslot
             for loadSlot in self.loadSlots:
                 loadSlot.handle_event(event)
@@ -193,33 +199,218 @@ class Menu:
                     loadSlot.textColor = loadSlot.inactive_color
                 if loadSlot.clicked:
                     loadSlot.reset()
-menu = Menu(screen)
-# play menu
+mainMenu = Menu(screen)
+# Pause Menu
+class PauseMenu:
+    def __init__(self, screen):
+        self.screen = screen
+        self.title = Text("Pause", 100, BLACK, (50, 50))
+        self.buttons = [Button(50,120,200,50,"Resume",RED,BLACK),
+                        Button(50,180,200,50,"Options",RED,BLACK),
+                        Button(50,240,200,50,"Restart",RED,BLACK),
+                        Button(50,300,200,50,"Quit",RED,BLACK)]
+        self.backButton = Button(100,120,50,50,"Back",RED,BLACK)
+        self.showSettings = False
+        self.showLoadScreen = False
+        self.settings()
 
+    def settings(self):
+        self.sound = Text("Music", 36, BLACK, (230, 200))
+        self.sound_slider = Slider(screen, 230, 240, 200, 10, min=0, max=100, step=1, initial=100)
+        self.sound_output = TextBox(screen, 440, 210, 50, 50, fontSize=25)
+        self.sound_output.disable()
+        self.sound_effects = Text("Sound Effects", 36, BLACK, (230, 300))
+        self.sound_effects_slider = Slider(screen, 230, 340, 200, 10, min=0, max=100, step=1, initial=100)
+        self.sound_effects_output = TextBox(screen, 440, 310, 50, 50, fontSize=25)
+        self.sound_effects_output.disable()
+        self.frame_rate = Text("Frame Rate", 36, BLACK, (230, 400))
+        self.frame_rate_slider = Slider(screen, 230, 450, 128, 10, min=1, max=64, step=1, initial=64)
+        self.frame_rate_output = TextBox(screen, 440, 413, 50, 50, fontSize=25)
+        self.frame_rate_output.disable()
+        self.brightness_text = Text("Brightness", 36, BLACK, (230, 500))
+        self.brightness_slider = Slider(screen, 230, 550, 200, 10, min=0, max=1.0, step=0.1, initial=1.0)
+        self.brightness_output = TextBox(screen, 440, 513, 50, 50, fontSize=25)
+        self.brightness_output.disable()
+
+    def draw(self):
+        self.screen.fill(WHITE)
+        if self.showSettings == False and self.showLoadScreen == False:
+            for button in self.buttons:
+                button.draw(self.screen)
+        self.title.render(screen)
+
+        # settings
+        if (self.showSettings):
+            self.backButton.draw(screen)
+            self.sound.render(screen)
+            self.sound_slider.draw()
+            self.sound_output.draw()
+            self.sound_output.setText(self.sound_slider.getValue())
+
+            self.sound_effects.render(screen)
+            self.sound_effects_slider.draw()
+            self.sound_effects_output.draw()
+            self.sound_effects_output.setText(self.sound_effects_slider.getValue())
+
+            self.frame_rate.render(screen)
+            self.frame_rate_slider.draw()
+            self.frame_rate_output.draw()
+            self.frame_rate_output.setText(self.frame_rate_slider.getValue())
+
+            self.brightness_text.render(screen)
+            self.brightness_slider.draw()
+            self.brightness_output.draw()
+            self.brightness_output.setText(round(self.brightness_slider.getValue(),2))
+
+    def update(self, screenHeight, screenWidth):
+        self.title.position = ((screenHeight / 2) - 100, 50)
+
+        button_x = (screenHeight / 2) - 100
+        for button in self.buttons:
+            button.x = button_x
+
+    def handle_event(self, event):
+        global running, show_mainmenu, show_pauseMenu, restart
+        pygame_widgets.update(event)
+        self.backButton.handle_event(event)
+        if self.backButton.clicked:
+            if self.showSettings:
+                self.showSettings = False
+            else:
+                self.showLoadScreen = False
+            self.backButton.reset()
+        # others
+        if self.showSettings == False and self.showLoadScreen == False:
+            for button in self.buttons:
+                button.handle_event(event)
+                if button.color == button.active_color:
+                    button.textColor = button.active_color
+                else:
+                    button.textColor = button.inactive_color
+                if button.clicked:
+                    if button.text == "Quit":
+                        show_pauseMenu = False
+                        show_mainmenu = True
+                    if button.text == "Restart":
+                        restart = True
+                        show_pauseMenu = False
+                    if button.text == "Options":
+                        self.showSettings = True
+                    if button.text == "Resume":
+                        show_pauseMenu = False
+                    button.reset()
+pauseMenu = PauseMenu(screen)
+# player Menu
+class PlayerMenu:
+    def __init__(self, screen):
+        self.screen = screen
+        self.font = pygame.font.Font(None, 36)
+        self.title = Text("Create Player", 100, BLACK, (100, 70))
+        self.name = Text("Name", 36, BLACK, (100, 140))
+        self.input_box = pygame.Rect(100, 170, 140, 32)
+        self.color_inactive = pygame.Color('lightskyblue3')
+        self.color_active = pygame.Color('dodgerblue2')
+        self.color = self.color_inactive
+        self.active = False
+        self.text = ''
+        self.done = False
+    
+    def draw(self):
+        pygame.draw.rect(self.screen, self.color, self.input_box, 2)
+        text_surface = self.font.render(self.text, True, BLACK)
+        self.screen.blit(text_surface, (self.input_box.x+5, self.input_box.y+5))
+        self.title.render(screen)
+        self.name.render(screen)
+
+    def update(self):
+        width = max(200, self.font.size(self.text)[0]+10)
+        self.input_box.w = width
+    
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.input_box.collidepoint(event.pos):
+                self.active = not self.active
+            else:
+                self.active = False
+            self.color = self.color_active if self.active else self.color_inactive
+        if event.type == pygame.KEYDOWN:
+            if self.active:
+                if event.key == pygame.K_RETURN:
+                    self.done = True
+                elif event.key == pygame.K_BACKSPACE:
+                    self.text = self.text[:-1]
+                else:
+                    if len(self.text) < 9:
+                        self.text += event.unicode
+playerMenu = PlayerMenu(screen)
+# map
+stars = []
+for i in range(2,100):
+    current_star = Map.Star(random.randint(20,screenWidth - 20),random.randint(20,screenHeight - 20),10,RANDOM_COLOR(),Map.generate_random_string(3),BLACK, RED)
+    if current_star.collider(stars) == False:
+        stars.append(current_star)
+
+line = Map.Line()
+# functions
+def restartMap():
+    global stars
+    for i in range(2,100):
+        current_star = Map.Star(random.randint(20,screenWidth - 20),random.randint(20,screenHeight - 20),10,RANDOM_COLOR(),Map.generate_random_string(3),BLACK, RED)
+        if current_star.collider(stars) == False:
+            stars.append(current_star)
 # loop
 running = True
-Mainmenu = True
-playGame = False
-while running:
-    events = pygame.event.get()
-    for event in events:
-        if event.type == pygame.QUIT:
-            running = False
-            sys.exit()
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                playGame = not(playGame)
-        elif event.type == pygame.VIDEORESIZE:
-            screenWidth, screenHeight = event.size
-        menu.handle_event(event)
+show_mainmenu = True
+show_pauseMenu = False
+show_playerProfile = False
+restart = False
+def main():
+    global running, show_mainmenu, show_pauseMenu, restart, screenWidth, screenHeight
+    while running:
+        mousePos = pygame.mouse.get_pos()
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                running = False
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE and show_mainmenu == False:
+                    show_pauseMenu = not(show_pauseMenu)
+            elif event.type == pygame.VIDEORESIZE:
+                screenWidth, screenHeight = event.size
+            if show_mainmenu:
+                mainMenu.handle_event(event)
+            if show_pauseMenu:
+                pauseMenu.handle_event(event)
+            playerMenu.handle_event(event)
+            # stars
+            for star in stars:
+                star.handle_events(event)
+                star.highlight(mousePos)
+                if star.clicked:
+                    line.add_point(star.x, star.y)
+                    star.reset()
+        screen.fill(WHITE)
+        if show_mainmenu:
+            mainMenu.update(screenWidth, screenHeight)
+            mainMenu.draw()
+        elif show_pauseMenu:
+            pauseMenu.update(screenWidth, screenHeight)
+            pauseMenu.draw()
+        elif restart:
+            restartMap()
+            restart = False
+        elif show_playerProfile:
+            playerMenu.draw()
+        # game
+        else:
+            line.draw(screen)
+            for star in stars:
+                star.draw(screen)
+        # update
+        pygame.display.flip()
+        pygame.display.update()
+        clock.tick(64)
 
-    screen.fill(WHITE)
-    if Mainmenu:
-        menu.update(screenWidth, screenHeight)
-        menu.draw()
-    if playGame:
-
-    # update
-    pygame.display.flip()
-    pygame.display.update()
-    clock.tick(64)
+if __name__ == "__main__":
+    main()
