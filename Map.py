@@ -67,8 +67,9 @@ class Point:
         self.y = y
 
 class Line:
-    def __init__(self):
+    def __init__(self, color):
         self.points = []
+        self.color = color
 
     def add_point(self, x, y):
         new_point = Point(x, y)
@@ -76,4 +77,14 @@ class Line:
 
     def draw(self, screen):
         for i in range(len(self.points) - 1):
-            pygame.draw.line(screen, (0,0,0), (self.points[i].x, self.points[i].y), (self.points[i + 1].x, self.points[i + 1].y), 2)
+            pygame.draw.line(screen, self.color, (self.points[i].x, self.points[i].y), (self.points[i + 1].x, self.points[i + 1].y), 2)
+
+    def remove_intersecting_segment(self, mouse_pos):
+        for i in range(len(self.points) - 1):
+            p1 = self.points[i]
+            p2 = self.points[i + 1]
+            p1p2 = pygame.Rect(min(p1.x, p2.x), min(p1.y, p2.y), abs(p1.x - p2.x), abs(p1.y - p2.y))
+            if p1p2.collidepoint(mouse_pos):
+                del self.points[i + 1]
+                return True
+        return False
