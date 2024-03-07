@@ -6,7 +6,7 @@ from pygame_widgets.slider import Slider
 from pygame_widgets.textbox import TextBox
 import random
 import pygame_gui
-import Map
+import Map, ColorPicker
 # screen
 pygame.init()
 screenWidth, screenHeight = 600, 600
@@ -305,28 +305,53 @@ class PlayerMenu:
     def __init__(self, screen):
         self.screen = screen
         self.font = pygame.font.Font(None, 36)
-        self.title = Text("Create Player", 100, BLACK, (100, 70))
-        self.name = Text("Name", 36, BLACK, (100, 140))
-        self.input_box = pygame.Rect(100, 170, 140, 32)
+        self.title = Text("Create Player", 100, BLACK, (50, 20))
+        self.name = Text("Name", 36, BLACK, (100, 120))
+        self.input_box = pygame.Rect(100, 150, 140, 32)
         self.color_inactive = pygame.Color('lightskyblue3')
         self.color_active = pygame.Color('dodgerblue2')
         self.color = self.color_inactive
+        self.flag = Text("Flag Color", 36, BLACK, (100, 200))
+        self.flag_color = ColorPicker.ColorPicker(100, 230, 200, 30)
+        self.ship = Text("Ship Color", 36, BLACK, (100, 300))
+        self.ship_color = ColorPicker.ColorPicker(100, 330, 200, 30)
+        self.base = Text("Base Color", 36, BLACK, (100, 400))
+        self.base_color = ColorPicker.ColorPicker(100, 430, 200, 30)
+        self.submit = Button(100, 500, 100, 50, "Submit",RED, BLACK)
         self.active = False
         self.text = ''
         self.done = False
     
     def draw(self):
+        global flagColor, shipColor, baseColor, line
         pygame.draw.rect(self.screen, self.color, self.input_box, 2)
         text_surface = self.font.render(self.text, True, BLACK)
         self.screen.blit(text_surface, (self.input_box.x+5, self.input_box.y+5))
         self.title.render(screen)
         self.name.render(screen)
+        self.flag.render(screen)
+        self.flag_color.draw(screen)
+        self.playerFlag = pygame.draw.rect(screen, self.flag_color.get_color(), (400, 230, 50, 50))
+        flagColor = self.flag_color.get_color()
+        self.ship.render(screen)
+        self.ship_color.draw(screen)
+        self.playerShip = pygame.draw.rect(screen, self.ship_color.get_color(), (400, 330, 100, 50))
+        self.base.render(screen)
+        self.base_color.draw(screen)
+        self.playerShip = pygame.draw.circle(screen, self.base_color.get_color(), (420, 430), 25, 2)
+        baseColor = self.base_color.get_color()
+        line = Map.Line(baseColor)
+        self.submit.draw(screen)
 
     def update(self):
         width = max(200, self.font.size(self.text)[0]+10)
         self.input_box.w = width
     
     def handle_event(self, event):
+        global show_playerProfile
+        self.flag_color.update()
+        self.ship_color.update()
+        self.base_color.update()
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.input_box.collidepoint(event.pos):
                 self.active = not self.active
@@ -342,22 +367,46 @@ class PlayerMenu:
                 else:
                     if len(self.text) < 9:
                         self.text += event.unicode
+        self.submit.handle_event(event)
+        if self.submit.clicked:
+            show_playerProfile = False
+            self.submit.reset()
+flagColor, shipColor, baseColor = BLACK, BLACK, BLACK
 playerMenu = PlayerMenu(screen)
-# map
-stars = []
-for i in range(2,100):
-    current_star = Map.Star(random.randint(20,screenWidth - 20),random.randint(20,screenHeight - 20),10,RANDOM_COLOR(),Map.generate_random_string(3),BLACK, RED)
-    if current_star.collider(stars) == False:
-        stars.append(current_star)
-
-line = Map.Line()
 # functions
 def restartMap():
-    global stars
+    global stars, show_playerProfile, line, flagColor, shipColor, baseColor
+    flagColor, shipColor, baseColor = BLACK, BLACK, BLACK
+    stars = []
+    line = Map.Line(baseColor)
     for i in range(2,100):
         current_star = Map.Star(random.randint(20,screenWidth - 20),random.randint(20,screenHeight - 20),10,RANDOM_COLOR(),Map.generate_random_string(3),BLACK, RED)
         if current_star.collider(stars) == False:
             stars.append(current_star)
+    show_playerProfile = True
+
+def random_star_color():
+    color_ranges = [
+        (1, (255, 138, 0)),   # Red
+        (2, (255, 255, 165)), # Yellow
+        (3, (255, 255, 255)), # White
+        (4, (170, 191, 255)),# Blue-white
+        (5, (94, 166, 255))  # Blue
+    ]
+    # Choose a random temperature within the defined range
+    min_temp, max_temp = color_ranges[0][0], color_ranges[-1][0]
+    temperature = random.randint(min_temp, max_temp)
+    for temp, color in color_ranges:
+        if temperature <= temp:
+            return color
+    return (94, 166, 255)
+# map
+stars = []
+for i in range(2,100):
+    current_star = Map.Star(random.randint(20,screenWidth - 20),random.randint(20,screenHeight - 20),5,random_star_color(),Map.generate_random_string(4),WHITE, RED)
+    if current_star.collider(stars) == False:
+        stars.append(current_star)
+line = Map.Line(baseColor)
 # loop
 running = True
 show_mainmenu = True
@@ -373,6 +422,8 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
                 sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+                line.remove_intersecting_segment(event.pos)
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE and show_mainmenu == False:
                     show_pauseMenu = not(show_pauseMenu)
@@ -388,6 +439,7 @@ def main():
                 star.handle_events(event)
                 star.highlight(mousePos)
                 if star.clicked:
+                    star.text_color = flagColor
                     line.add_point(star.x, star.y)
                     star.reset()
         screen.fill(WHITE)
@@ -404,6 +456,7 @@ def main():
             playerMenu.draw()
         # game
         else:
+            screen.fill(BLACK)
             line.draw(screen)
             for star in stars:
                 star.draw(screen)
