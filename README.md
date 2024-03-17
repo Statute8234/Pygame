@@ -7,7 +7,7 @@ This Pygame-based application offers a main menu, pause menu, and player profile
 - [About](#about)
 - [Features](#features)
 - [Imports](#Imports)
-- [Rating: 8/10](#Rating)
+- [Rating: 5/10](#Rating)
 
 # About
 
@@ -29,4 +29,6 @@ pygame, pygame.sprite, sys,  pygame_widgets, pygame_widgets.slider, pygame_widge
 
 # Rating
 
-The code structure is well-organized, separating concerns into classes like Text, Button, Menu, and PlayerMenu. Multiple menus with interactive buttons and settings sliders are implemented. Pygame's event handling is integrated for effective user interaction. Global variables are used for menu switching and game control. However, there is a lack of comments/documentation, some code blocks are redundant, and the screen resizing event handling is incomplete. Additionally, there is limited error handling, potentially leading to unexpected behavior in certain scenarios.
+The code is well-organized with clear separation of classes and functions, but could be further divided into smaller, more modular functions to improve readability. Variable names are generally descriptive and follow the convention of using lowercase letters and underscores for multi-word variable names, but more descriptive names could be used to improve clarity.
+Comments could be added to clarify the purpose of certain blocks of code, especially complex or less intuitive parts. The code effectively handles user input using event handling in the main loop, but additional input validation could be added to handle edge cases or prevent unexpected behavior.
+The GUI design is simple but functional, but there is room for improvement in terms of visual aesthetics and user experience. Adding more visual elements, such as icons or background images, and refining the layout could enhance the overall user interface. Overall, the code demonstrates a functional implementation of a game menu system with GUI elements.
