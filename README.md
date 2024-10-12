@@ -1,6 +1,7 @@
 # Space
 
 This Pygame-based application offers a main menu, pause menu, and player profile creation, as well as a right-click line drawing feature.
+
 [![Static Badge](https://img.shields.io/badge/pygame-brown)](https://pypi.org/project/pygame/)
 [![Static Badge](https://img.shields.io/badge/math-yellow)](https://pypi.org/project/math/)
 [![Static Badge](https://img.shields.io/badge/random,-black)](https://pypi.org/project/random,/)
